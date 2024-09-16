@@ -22,31 +22,44 @@ type cliCommand struct {
 	callback    func(*config) error
 }
 
-var cliCommandMap = map[string]cliCommand{
-	"help": {
-		name:        "help",
-		description: "Displays a help message",
-		callback:    commandHelp,
-	},
-	"exit": {
-		name:        "exit",
-		description: "Exit the Pokedex",
-		callback:    commandExit,
-	},
-	"map": {
-		name:        "map",
-		description: "Displays first 20 locations of map, consecutive calls display next 20 locations",
-		callback:    commandMap,
-	},
-	"mapb": {
-		name:        "mapb",
-		description: "Displays the previous 20 locations of map",
-		callback:    commandMapB,
-	},
+var cliCommandMap map[string]cliCommand
+
+func init() {
+	cliCommandMap = map[string]cliCommand{
+		"help": {
+			name:        "help",
+			description: "Displays a help message",
+			callback:    commandHelp,
+		},
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    commandExit,
+		},
+		"map": {
+			name:        "map",
+			description: "Displays first 20 locations of map, consecutive calls display next 20 locations",
+			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Displays the previous 20 locations of map",
+			callback:    commandMapB,
+		},
+	}
 }
 
 func commandHelp(conf *config) error {
-	fmt.Println(globals.HelpText)
+	fmt.Println()
+	fmt.Println("Welcome to the Pokedex!")
+	fmt.Println("Usage:")
+	fmt.Println()
+
+	for key, cmd := range cliCommandMap {
+		fmt.Printf("%s: %s\n", key, cmd.description)
+	}
+	fmt.Println()
+
 	return nil
 }
 
@@ -57,20 +70,37 @@ func commandExit(conf *config) error {
 }
 
 func commandMap(conf *config) error {
-	locations, err := getLocationsAll(globals.LocationsAllURL, conf)
+	// needs to change to getLocationAreasAll
+	nextURL := conf.NextURL
+
+	locations, err := getLocationsAll(nextURL, conf)
 	if err != nil {
 		return err
 	}
 
-	// Process the locations as needed
-	fmt.Println("Fetched locations:", locations)
-	fmt.Println("Next URL:", conf.NextURL)
-	fmt.Println("Previous URL:", conf.PreviousURL)
-
+	for _, location := range locations {
+		fmt.Println(location.Name)
+	}
 	return nil
 }
 
 func commandMapB(conf *config) error {
+	// needs to change to getLocationAreasAll
+	previousURL := conf.PreviousURL
+
+	if previousURL == "" {
+		fmt.Println("Already on Page 1")
+		return nil
+	}
+
+	locations, err := getLocationsAll(previousURL, conf)
+	if err != nil {
+		return err
+	}
+
+	for _, location := range locations {
+		fmt.Println(location.Name)
+	}
 	return nil
 }
 
@@ -137,7 +167,7 @@ func getLocationsAll(url string, conf *config) ([]Location, error) {
 func main() {
 	// Initialize configuration
 	conf := &config{
-		NextURL:     "",
+		NextURL:     globals.LocationsAllURL,
 		PreviousURL: "",
 	}
 
@@ -146,13 +176,15 @@ func main() {
 		fmt.Print("Pokedex > ")
 
 		scanner.Scan()
-
 		line := scanner.Text()
-		switch line {
-		case "help", "exit", "map":
-			cliCommandMap[line].callback(conf)
-		default:
-			fmt.Println("Unknown command. Type 'help' for a list of commands")
+
+		if command, exists := cliCommandMap[line]; exists {
+			if err := command.callback(conf); err != nil {
+				fmt.Println("Error")
+			}
+		} else {
+			fmt.Println("Unknown command. Type 'help' for a list of commands.")
 		}
+
 	}
 }
