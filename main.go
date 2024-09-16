@@ -70,10 +70,9 @@ func commandExit(conf *config) error {
 }
 
 func commandMap(conf *config) error {
-	// needs to change to getLocationAreasAll
 	nextURL := conf.NextURL
 
-	locations, err := getLocationsAll(nextURL, conf)
+	locations, err := getLocationAreasAll(nextURL, conf)
 	if err != nil {
 		return err
 	}
@@ -85,7 +84,6 @@ func commandMap(conf *config) error {
 }
 
 func commandMapB(conf *config) error {
-	// needs to change to getLocationAreasAll
 	previousURL := conf.PreviousURL
 
 	if previousURL == "" {
@@ -93,7 +91,7 @@ func commandMapB(conf *config) error {
 		return nil
 	}
 
-	locations, err := getLocationsAll(previousURL, conf)
+	locations, err := getLocationAreasAll(previousURL, conf)
 	if err != nil {
 		return err
 	}
@@ -104,48 +102,33 @@ func commandMapB(conf *config) error {
 	return nil
 }
 
-type Location struct {
+type LocationArea struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
-	// Id     int            `json:"id"`
-	// Region Region         `json:"region"`
-	// Areas  []LocationArea `json:"areas"`
 }
 
-type LocationsAll struct {
-	Count       int        `json:"count"`
-	NextURL     string     `json:"next"`
-	PreviousURL string     `json:"previous"`
-	Results     []Location `json:"results"`
+type LocationAreasAll struct {
+	Count       int            `json:"count"`
+	NextURL     string         `json:"next"`
+	PreviousURL string         `json:"previous"`
+	Results     []LocationArea `json:"results"`
 }
 
-type Region struct {
-	Id        int        `json:"id"`
-	Locations []Location `json:"locations"`
-	Name      string     `json:"name"`
-}
-
-type LocationArea struct {
-	Id       int      `json:"id"`
-	Name     string   `json:"name"`
-	Location Location `json:"location"`
-}
-
-func getLocationsAll(url string, conf *config) ([]Location, error) {
+func getLocationAreasAll(url string, conf *config) ([]LocationArea, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return []Location{}, fmt.Errorf("could not create GET request - %w", err)
+		return []LocationArea{}, fmt.Errorf("could not create GET request - %w", err)
 	}
 
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		return []Location{}, fmt.Errorf("could not perform GET request - %w", err)
+		return []LocationArea{}, fmt.Errorf("could not perform GET request - %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return []Location{}, fmt.Errorf("status code of response is not OK - %v", res.Status)
+		return []LocationArea{}, fmt.Errorf("status code of response is not OK - %v", res.Status)
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -153,15 +136,15 @@ func getLocationsAll(url string, conf *config) ([]Location, error) {
 		return nil, fmt.Errorf("could not read response body - %w", err)
 	}
 
-	var locationsAll LocationsAll
-	if err := json.Unmarshal(body, &locationsAll); err != nil {
+	var locationAreasAll LocationAreasAll
+	if err := json.Unmarshal(body, &locationAreasAll); err != nil {
 		return nil, fmt.Errorf("could not decode json body into instance of LocationsAll - %w", err)
 	}
 
-	conf.NextURL = locationsAll.NextURL
-	conf.PreviousURL = locationsAll.PreviousURL
+	conf.NextURL = locationAreasAll.NextURL
+	conf.PreviousURL = locationAreasAll.PreviousURL
 
-	return locationsAll.Results, nil
+	return locationAreasAll.Results, nil
 }
 
 func main() {
