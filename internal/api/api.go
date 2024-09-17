@@ -87,7 +87,11 @@ func ExploreArea(url string, conf *globals.Config) ([]string, error) {
 		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("response status not okay - %w", err)
+			if res.StatusCode == 404 {
+				return nil, fmt.Errorf("location not found")
+			} else {
+				return nil, fmt.Errorf("non-okay response status: %v", res.Status)
+			}
 		}
 
 		var area globals.Area
