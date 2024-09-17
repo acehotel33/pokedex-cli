@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/acehotel33/pokedex-cli/globals"
 	"github.com/acehotel33/pokedex-cli/internal/api"
@@ -33,10 +34,15 @@ func init() {
 			Description: "Displays the previous 20 locations of map",
 			Callback:    commandMapB,
 		},
+		"explore": {
+			Name:        "explore",
+			Description: "Explore the specifed location for pokemon",
+			Callback:    commandExploreArea,
+		},
 	}
 }
 
-func commandHelp(conf *globals.Config) error {
+func commandHelp(conf *globals.Config, params []string) error {
 	fmt.Println()
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
@@ -50,13 +56,13 @@ func commandHelp(conf *globals.Config) error {
 	return nil
 }
 
-func commandExit(conf *globals.Config) error {
+func commandExit(conf *globals.Config, params []string) error {
 	fmt.Println("Exiting")
 	os.Exit(0)
 	return nil
 }
 
-func commandMap(conf *globals.Config) error {
+func commandMap(conf *globals.Config, params []string) error {
 	nextURL := conf.NextURL
 
 	locations, err := api.GetLocationAreasAll(nextURL, conf)
@@ -70,7 +76,7 @@ func commandMap(conf *globals.Config) error {
 	return nil
 }
 
-func commandMapB(conf *globals.Config) error {
+func commandMapB(conf *globals.Config, params []string) error {
 	previousURL := conf.PreviousURL
 
 	if previousURL == "" {
@@ -89,6 +95,25 @@ func commandMapB(conf *globals.Config) error {
 	return nil
 }
 
+func commandExploreArea(conf *globals.Config, params []string) error {
+	if len(params) < 1 {
+		return fmt.Errorf("missing argument")
+	}
+	location := params[0]
+	if location == " " {
+		return fmt.Errorf("empty location given")
+	}
+	fullURL := globals.LocationsAllURL + location
+	pokemonSplice, err := api.ExploreArea(fullURL, conf)
+	if err != nil {
+		return fmt.Errorf("could not explore area - %w", err)
+	}
+	for _, pokemon := range pokemonSplice {
+		fmt.Println(pokemon)
+	}
+	return nil
+}
+
 func main() {
 	// Initialize configuration
 	conf := &globals.Config{
@@ -102,10 +127,21 @@ func main() {
 
 		scanner.Scan()
 		line := scanner.Text()
+		words := strings.Split(line, " ")
 
-		if command, exists := cliCommandMap[line]; exists {
-			if err := command.Callback(conf); err != nil {
-				fmt.Println("Error")
+		// fmt.Println("Here are the words:")
+		// for _, word := range words {
+		// 	fmt.Printf("arg: %s\n", word)
+		// }
+		// fmt.Println("End of words")
+
+		if command, exists := cliCommandMap[words[0]]; exists {
+			params := []string{}
+			if len(words) > 1 {
+				params = words[1:]
+			}
+			if err := command.Callback(conf, params); err != nil {
+				fmt.Printf("Could not perform command: %v\n", err)
 			}
 		} else {
 			fmt.Println("Unknown command. Type 'help' for a list of commands.")

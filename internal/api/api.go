@@ -19,6 +19,7 @@ func GetLocationAreasAll(url string, conf *globals.Config) ([]globals.LocationAr
 		conf.PreviousURL = locationAreasAll.PreviousURL
 
 		return locationAreasAll.Results, nil
+
 	} else {
 
 		req, err := http.NewRequest("GET", url, nil)
@@ -55,4 +56,51 @@ func GetLocationAreasAll(url string, conf *globals.Config) ([]globals.LocationAr
 		return locationAreasAll.Results, nil
 	}
 
+}
+
+func ExploreArea(url string, conf *globals.Config) ([]string, error) {
+	if body, exists := globals.Cache.Get(url); exists {
+		var area globals.Area
+		if err := json.Unmarshal(body, &area); err != nil {
+			return nil, fmt.Errorf("could not unmarshal cached body into Area struct - %w", err)
+		}
+		pokemonEncounters := area.PokemonEncounters
+		pokemonSlice := []string{}
+		for _, item := range pokemonEncounters {
+			pokemonSlice = append(pokemonSlice, item.Pokemon.Name)
+		}
+
+		return pokemonSlice, nil
+
+	} else {
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("could not create GET request - %w", err)
+		}
+
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("could not perform request - %w", err)
+		}
+		defer res.Body.Close()
+
+		if res.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("response status not okay - %w", err)
+		}
+
+		var area globals.Area
+		if err := json.NewDecoder(res.Body).Decode(&area); err != nil {
+			return nil, fmt.Errorf("could not decode JSON into Area struct - %w", err)
+		}
+
+		pokemonEncounters := area.PokemonEncounters
+		pokemonSlice := []string{}
+		for _, item := range pokemonEncounters {
+			pokemonSlice = append(pokemonSlice, item.Pokemon.Name)
+		}
+
+		return pokemonSlice, nil
+	}
 }
