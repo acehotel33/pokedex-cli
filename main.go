@@ -3,8 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/acehotel33/pokedex-cli/globals"
 	"github.com/acehotel33/pokedex-cli/internal/api"
@@ -38,6 +41,11 @@ func init() {
 			Name:        "explore",
 			Description: "Explore the specifed location for pokemon",
 			Callback:    commandExploreArea,
+		},
+		"catch": {
+			Name:        "catch",
+			Description: "Try to catch the specified pokemon",
+			Callback:    commandCatch,
 		},
 	}
 }
@@ -114,6 +122,47 @@ func commandExploreArea(conf *globals.Config, params []string) error {
 		fmt.Printf("- %s\n", pokemon)
 	}
 	return nil
+}
+
+func commandCatch(conf *globals.Config, params []string) error {
+	if len(params) < 1 {
+		return fmt.Errorf("catch command missing arguments")
+	}
+	toCatch := params[0]
+	fullURL := globals.PokemonURL + toCatch
+	pokemon, err := api.GetPokemon(fullURL, conf)
+	if err != nil {
+		return fmt.Errorf("could not find pokemon - %w", err)
+	}
+	if result := helperCatch(pokemon); result {
+		fmt.Printf("Result: Success! You caught %v\n", pokemon.Name)
+	} else {
+		fmt.Printf("Result: Oh no! %v slipped away!\n", pokemon.Name)
+	}
+	return nil
+}
+
+func helperCatch(pokemon globals.Pokemon) bool {
+	baseExperience := pokemon.BaseExperience
+	fmt.Printf("Base experience: %v\n", baseExperience)
+	if baseExperience < 100 {
+		baseExperience = 100
+	} else if baseExperience > 500 {
+		baseExperience = 500
+	}
+	fmt.Printf("Adjusted Base experience: %v\n", baseExperience)
+	var chance float64
+	chance = math.Sqrt(80.0) / math.Sqrt(float64(baseExperience))
+	fmt.Printf("Chance before multiplier: %v percent\n", chance)
+	mult := (600.0 - float64(baseExperience)) / 600.0
+	fmt.Printf("Multiplier: %v\n", mult)
+	chance = chance * float64(mult) * 100
+	chanceInt := int(chance)
+	fmt.Printf("Chance after multiplier: %v percent\n", chanceInt)
+	src := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(src)
+	fmt.Printf("Chance of success: %v percent\n", chanceInt)
+	return r.Intn(100) < chanceInt
 }
 
 func main() {

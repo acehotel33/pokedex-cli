@@ -108,3 +108,18 @@ func ExploreArea(url string, conf *globals.Config) ([]string, error) {
 		return pokemonSlice, nil
 	}
 }
+
+func GetPokemon(url string, conf *globals.Config) (globals.Pokemon, error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return globals.Pokemon{}, err
+	}
+	defer res.Body.Close()
+
+	var pokemon globals.Pokemon
+	if err := json.NewDecoder(res.Body).Decode(&pokemon); err != nil {
+		return globals.Pokemon{}, err
+	}
+
+	return pokemon, nil
+}
