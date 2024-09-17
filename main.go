@@ -108,8 +108,10 @@ func commandExploreArea(conf *globals.Config, params []string) error {
 	if err != nil {
 		return fmt.Errorf("could not explore area - %w", err)
 	}
+	fmt.Printf("Exploring %s...\n", location)
+	fmt.Println("Found Pokemon:")
 	for _, pokemon := range pokemonSplice {
-		fmt.Println(pokemon)
+		fmt.Printf("- %s\n", pokemon)
 	}
 	return nil
 }
@@ -128,12 +130,6 @@ func main() {
 		scanner.Scan()
 		line := scanner.Text()
 		words := strings.Split(line, " ")
-
-		// fmt.Println("Here are the words:")
-		// for _, word := range words {
-		// 	fmt.Printf("arg: %s\n", word)
-		// }
-		// fmt.Println("End of words")
 
 		if command, exists := cliCommandMap[words[0]]; exists {
 			params := []string{}
