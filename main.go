@@ -51,6 +51,11 @@ func init() {
 			Description: "Display Pokedex of current Pokemon",
 			Callback:    commandPokedex,
 		},
+		"inspect": {
+			Name:        "inspect",
+			Description: "Inspect Pokemon's attributes if already caught",
+			Callback:    commandInspect,
+		},
 	}
 }
 
@@ -189,7 +194,7 @@ func helperCatch(pokemon globals.Pokemon) bool {
 	// Higher baseExperience should result in a lower chance
 	chance := (500.0 - float64(baseExperience)) / 5.0
 
-	fmt.Printf("Chance of success: %v percent\n", chance)
+	fmt.Printf("Chance of success: %.1f percent\n", chance)
 
 	// Use a random seed
 	src := rand.NewSource(time.Now().UnixNano())
@@ -198,6 +203,10 @@ func helperCatch(pokemon globals.Pokemon) bool {
 	// Determine success based on random number
 	result := r.Intn(100)
 
+	time.Sleep(2 * time.Second)
+	fmt.Println(".\n.")
+	fmt.Printf("Throwing a Pokeball at %s...", pokemon.Name)
+	fmt.Println("")
 	for i := 0; i < 4; i++ {
 		time.Sleep(1 * time.Second)
 		fmt.Println(".")
@@ -225,6 +234,38 @@ func commandPokedex(conf *globals.Config, params []string) error {
 	for key := range conf.Pokedex {
 		fmt.Printf("- %s -\n", key)
 	}
+	return nil
+}
+
+func commandInspect(conf *globals.Config, params []string) error {
+	fmt.Println(".\n.")
+	if len(params) < 1 {
+		return fmt.Errorf("missing parameter")
+	}
+	pokemonToInspect := params[0]
+	if poke, exists := conf.Pokedex[pokemonToInspect]; !exists {
+		return fmt.Errorf("you have not caught that pokemon")
+	} else {
+		fmt.Printf("Name: %s\n", poke.Name)
+		fmt.Printf("Height: %v\n", poke.Height)
+		fmt.Printf("Weight: %v\n", poke.Weight)
+
+		fmt.Println("Stats:")
+		stats := poke.Stats
+		for _, stat := range stats {
+			statName := stat.Stat.Name
+			statValue := stat.BaseStat
+			fmt.Printf("  -%s: %v\n", statName, statValue)
+		}
+
+		fmt.Println("Types:")
+		pTypes := poke.Types
+		for _, pType := range pTypes {
+			pTypeName := pType.Type.Name
+			fmt.Printf("  - %s\n", pTypeName)
+		}
+	}
+	fmt.Println(".\n.")
 	return nil
 }
 
