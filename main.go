@@ -47,11 +47,17 @@ func init() {
 			Description: "Try to catch the specified pokemon",
 			Callback:    commandCatch,
 		},
+		"pokedex": {
+			Name:        "pokedex",
+			Description: "Display Pokedex of current Pokemon",
+			Callback:    commandPokedex,
+		},
 	}
 }
 
 func commandHelp(conf *globals.Config, params []string) error {
-	fmt.Println()
+	defer fmt.Println(".\n.")
+	fmt.Println(".\n.")
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()
@@ -59,18 +65,21 @@ func commandHelp(conf *globals.Config, params []string) error {
 	for key, cmd := range cliCommandMap {
 		fmt.Printf("%s: %s\n", key, cmd.Description)
 	}
-	fmt.Println()
 
 	return nil
 }
 
 func commandExit(conf *globals.Config, params []string) error {
+	defer fmt.Println(".\n.")
+	fmt.Println(".\n.")
 	fmt.Println("Exiting")
 	os.Exit(0)
 	return nil
 }
 
 func commandMap(conf *globals.Config, params []string) error {
+	defer fmt.Println(".\n.")
+	fmt.Println(".\n.")
 	nextURL := conf.NextURL
 
 	locations, err := api.GetLocationAreasAll(nextURL, conf)
@@ -85,6 +94,9 @@ func commandMap(conf *globals.Config, params []string) error {
 }
 
 func commandMapB(conf *globals.Config, params []string) error {
+	defer fmt.Println(".\n.")
+	fmt.Println(".\n.")
+
 	previousURL := conf.PreviousURL
 
 	if previousURL == "" {
@@ -104,6 +116,9 @@ func commandMapB(conf *globals.Config, params []string) error {
 }
 
 func commandExploreArea(conf *globals.Config, params []string) error {
+	defer fmt.Println(".\n.")
+	fmt.Println(".\n.")
+
 	if len(params) < 1 {
 		return fmt.Errorf("missing argument")
 	}
@@ -125,6 +140,9 @@ func commandExploreArea(conf *globals.Config, params []string) error {
 }
 
 func commandCatch(conf *globals.Config, params []string) error {
+	defer fmt.Println(".\n.")
+	fmt.Println(".\n.")
+
 	if len(params) < 1 {
 		return fmt.Errorf("catch command missing arguments")
 	}
@@ -144,14 +162,16 @@ func commandCatch(conf *globals.Config, params []string) error {
 	}
 
 	time.Sleep(time.Second)
-	fmt.Println(".\n.\nPokedex:")
-	for key := range conf.Pokedex {
-		fmt.Printf("- %s -\n", key)
+	fmt.Println(".\n.")
+	fmt.Println("Current Pokedex:")
+	if err := commandPokedex(conf, params); err != nil {
+		return fmt.Errorf("could not display pokedex - %w", err)
 	}
 	return nil
 }
 
 func helperCatch(pokemon globals.Pokemon) bool {
+
 	baseExperience := pokemon.BaseExperience
 	fmt.Printf(".\nBase experience: %v\n", baseExperience)
 	if baseExperience < 100 {
@@ -192,6 +212,19 @@ func addToPokedex(conf *globals.Config, pokemon globals.Pokemon) error {
 	}
 
 	conf.Pokedex[pokemon.Name] = pokemon
+	return nil
+}
+
+func commandPokedex(conf *globals.Config, params []string) error {
+	defer fmt.Println(".\n.")
+	fmt.Println(".\n.")
+	if len(conf.Pokedex) == 0 {
+		fmt.Println("Pokedex is empty!")
+		return nil
+	}
+	for key := range conf.Pokedex {
+		fmt.Printf("- %s -\n", key)
+	}
 	return nil
 }
 
