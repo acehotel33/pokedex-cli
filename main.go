@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"math"
 	"math/rand"
 	"os"
 	"strings"
@@ -140,7 +139,6 @@ func commandExploreArea(conf *globals.Config, params []string) error {
 }
 
 func commandCatch(conf *globals.Config, params []string) error {
-	defer fmt.Println(".\n.")
 	fmt.Println(".\n.")
 
 	if len(params) < 1 {
@@ -152,6 +150,11 @@ func commandCatch(conf *globals.Config, params []string) error {
 	if err != nil {
 		return fmt.Errorf("could not find pokemon - %w", err)
 	}
+
+	if _, exists := conf.Pokedex[pokemon.Name]; exists {
+		return fmt.Errorf("pokemon %s already in pokedex", pokemon.Name)
+	}
+
 	if result := helperCatch(pokemon); result {
 		if err := addToPokedex(conf, pokemon); err != nil {
 			return fmt.Errorf("pokemon %s already caught", pokemon.Name)
@@ -173,37 +176,35 @@ func commandCatch(conf *globals.Config, params []string) error {
 func helperCatch(pokemon globals.Pokemon) bool {
 
 	baseExperience := pokemon.BaseExperience
-	fmt.Printf(".\nBase experience: %v\n", baseExperience)
+	fmt.Printf("Base Experience of %s: %v\n", pokemon.Name, baseExperience)
+
+	// Normalize baseExperience to a minimum of 100 and maximum of 500
 	if baseExperience < 100 {
 		baseExperience = 100
 	} else if baseExperience > 500 {
 		baseExperience = 500
 	}
-	fmt.Printf("Adjusted Base experience: %v\n", baseExperience)
 
-	time.Sleep(2 * time.Second)
+	// Calculate a realistic chance using baseExperience
+	// Higher baseExperience should result in a lower chance
+	chance := (500.0 - float64(baseExperience)) / 5.0
 
-	var chance float64
-	chance = math.Sqrt(80.0) / math.Sqrt(float64(baseExperience))
-	fmt.Printf(".\nChance before multiplier: %.0f percent\n", chance*100)
-	mult := (600.0 - float64(baseExperience)) / 600.0
-	fmt.Printf("Multiplier: %.2f\n", mult)
-	chance = chance * float64(mult) * 100
-	chanceInt := int(chance)
-	fmt.Printf("Chance after multiplier: %v percent\n", chanceInt)
+	fmt.Printf("Chance of success: %v percent\n", chance)
+
+	// Use a random seed
 	src := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(src)
 
-	time.Sleep(2 * time.Second)
-
-	fmt.Printf(".\nChance of success: %v percent\n", chanceInt)
-	fmt.Printf(".\nAttempting to catch %s...\n", pokemon.Name)
+	// Determine success based on random number
+	result := r.Intn(100)
 
 	for i := 0; i < 4; i++ {
 		time.Sleep(1 * time.Second)
 		fmt.Println(".")
 	}
-	return r.Intn(100) < chanceInt
+
+	return result < int(chance)
+
 }
 
 func addToPokedex(conf *globals.Config, pokemon globals.Pokemon) error {
@@ -216,7 +217,6 @@ func addToPokedex(conf *globals.Config, pokemon globals.Pokemon) error {
 }
 
 func commandPokedex(conf *globals.Config, params []string) error {
-	defer fmt.Println(".\n.")
 	fmt.Println(".\n.")
 	if len(conf.Pokedex) == 0 {
 		fmt.Println("Pokedex is empty!")
