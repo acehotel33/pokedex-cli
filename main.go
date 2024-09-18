@@ -135,34 +135,64 @@ func commandCatch(conf *globals.Config, params []string) error {
 		return fmt.Errorf("could not find pokemon - %w", err)
 	}
 	if result := helperCatch(pokemon); result {
-		fmt.Printf("Result: Success! You caught %v\n", pokemon.Name)
+		if err := addToPokedex(conf, pokemon); err != nil {
+			return fmt.Errorf("pokemon %s already caught", pokemon.Name)
+		}
+		fmt.Printf("Result: Success! You caught %v!\n", pokemon.Name)
 	} else {
 		fmt.Printf("Result: Oh no! %v slipped away!\n", pokemon.Name)
+	}
+
+	time.Sleep(time.Second)
+	fmt.Println(".\n.\nPokedex:")
+	for key := range conf.Pokedex {
+		fmt.Printf("- %s -\n", key)
 	}
 	return nil
 }
 
 func helperCatch(pokemon globals.Pokemon) bool {
 	baseExperience := pokemon.BaseExperience
-	fmt.Printf("Base experience: %v\n", baseExperience)
+	fmt.Printf(".\nBase experience: %v\n", baseExperience)
 	if baseExperience < 100 {
 		baseExperience = 100
 	} else if baseExperience > 500 {
 		baseExperience = 500
 	}
 	fmt.Printf("Adjusted Base experience: %v\n", baseExperience)
+
+	time.Sleep(2 * time.Second)
+
 	var chance float64
 	chance = math.Sqrt(80.0) / math.Sqrt(float64(baseExperience))
-	fmt.Printf("Chance before multiplier: %v percent\n", chance)
+	fmt.Printf(".\nChance before multiplier: %.0f percent\n", chance*100)
 	mult := (600.0 - float64(baseExperience)) / 600.0
-	fmt.Printf("Multiplier: %v\n", mult)
+	fmt.Printf("Multiplier: %.2f\n", mult)
 	chance = chance * float64(mult) * 100
 	chanceInt := int(chance)
 	fmt.Printf("Chance after multiplier: %v percent\n", chanceInt)
 	src := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(src)
-	fmt.Printf("Chance of success: %v percent\n", chanceInt)
+
+	time.Sleep(2 * time.Second)
+
+	fmt.Printf(".\nChance of success: %v percent\n", chanceInt)
+	fmt.Printf(".\nAttempting to catch %s...\n", pokemon.Name)
+
+	for i := 0; i < 4; i++ {
+		time.Sleep(1 * time.Second)
+		fmt.Println(".")
+	}
 	return r.Intn(100) < chanceInt
+}
+
+func addToPokedex(conf *globals.Config, pokemon globals.Pokemon) error {
+	if _, exists := conf.Pokedex[pokemon.Name]; exists {
+		return fmt.Errorf("pokemon %s already in pokedex", pokemon.Name)
+	}
+
+	conf.Pokedex[pokemon.Name] = pokemon
+	return nil
 }
 
 func main() {
@@ -170,6 +200,7 @@ func main() {
 	conf := &globals.Config{
 		NextURL:     globals.LocationsAllURL,
 		PreviousURL: "",
+		Pokedex:     make(map[string]globals.Pokemon),
 	}
 
 	for {

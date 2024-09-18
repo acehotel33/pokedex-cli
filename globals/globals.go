@@ -14,6 +14,7 @@ var Cache = cache.NewCache(5 * time.Minute)
 type Config struct {
 	NextURL     string `json:"next"`
 	PreviousURL string `json:"previous"`
+	Pokedex     map[string]Pokemon
 }
 
 type CliCommand struct {
