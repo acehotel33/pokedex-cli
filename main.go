@@ -14,6 +14,37 @@ import (
 
 var cliCommandMap map[string]globals.CliCommand
 
+func main() {
+	// Initialize configuration
+	conf := &globals.Config{
+		NextURL:     globals.LocationsAllURL,
+		PreviousURL: "",
+		Pokedex:     make(map[string]globals.Pokemon),
+	}
+
+	for {
+		scanner := bufio.NewScanner(os.Stdin)
+		fmt.Print("Pokedex > ")
+
+		scanner.Scan()
+		line := scanner.Text()
+		words := strings.Split(line, " ")
+
+		if command, exists := cliCommandMap[words[0]]; exists {
+			params := []string{}
+			if len(words) > 1 {
+				params = words[1:]
+			}
+			if err := command.Callback(conf, params); err != nil {
+				fmt.Printf("Could not perform command: %v\n", err)
+			}
+		} else {
+			fmt.Println("Unknown command. Type 'help' for a list of commands.")
+		}
+
+	}
+}
+
 func init() {
 	cliCommandMap = map[string]globals.CliCommand{
 		"help": {
@@ -178,6 +209,50 @@ func commandCatch(conf *globals.Config, params []string) error {
 	return nil
 }
 
+func commandInspect(conf *globals.Config, params []string) error {
+	fmt.Println(".\n.")
+	if len(params) < 1 {
+		return fmt.Errorf("missing parameter")
+	}
+	pokemonToInspect := params[0]
+	if poke, exists := conf.Pokedex[pokemonToInspect]; !exists {
+		return fmt.Errorf("you have not caught that pokemon")
+	} else {
+		fmt.Printf("Name: %s\n", poke.Name)
+		fmt.Printf("Height: %v\n", poke.Height)
+		fmt.Printf("Weight: %v\n", poke.Weight)
+
+		fmt.Println("Stats:")
+		stats := poke.Stats
+		for _, stat := range stats {
+			statName := stat.Stat.Name
+			statValue := stat.BaseStat
+			fmt.Printf("  -%s: %v\n", statName, statValue)
+		}
+
+		fmt.Println("Types:")
+		pTypes := poke.Types
+		for _, pType := range pTypes {
+			pTypeName := pType.Type.Name
+			fmt.Printf("  - %s\n", pTypeName)
+		}
+	}
+	fmt.Println(".\n.")
+	return nil
+}
+
+func commandPokedex(conf *globals.Config, params []string) error {
+	fmt.Println(".\n.")
+	if len(conf.Pokedex) == 0 {
+		fmt.Println("Pokedex is empty!")
+		return nil
+	}
+	for key := range conf.Pokedex {
+		fmt.Printf("- %s -\n", key)
+	}
+	return nil
+}
+
 func helperCatch(pokemon globals.Pokemon) bool {
 
 	baseExperience := pokemon.BaseExperience
@@ -223,79 +298,4 @@ func addToPokedex(conf *globals.Config, pokemon globals.Pokemon) error {
 
 	conf.Pokedex[pokemon.Name] = pokemon
 	return nil
-}
-
-func commandPokedex(conf *globals.Config, params []string) error {
-	fmt.Println(".\n.")
-	if len(conf.Pokedex) == 0 {
-		fmt.Println("Pokedex is empty!")
-		return nil
-	}
-	for key := range conf.Pokedex {
-		fmt.Printf("- %s -\n", key)
-	}
-	return nil
-}
-
-func commandInspect(conf *globals.Config, params []string) error {
-	fmt.Println(".\n.")
-	if len(params) < 1 {
-		return fmt.Errorf("missing parameter")
-	}
-	pokemonToInspect := params[0]
-	if poke, exists := conf.Pokedex[pokemonToInspect]; !exists {
-		return fmt.Errorf("you have not caught that pokemon")
-	} else {
-		fmt.Printf("Name: %s\n", poke.Name)
-		fmt.Printf("Height: %v\n", poke.Height)
-		fmt.Printf("Weight: %v\n", poke.Weight)
-
-		fmt.Println("Stats:")
-		stats := poke.Stats
-		for _, stat := range stats {
-			statName := stat.Stat.Name
-			statValue := stat.BaseStat
-			fmt.Printf("  -%s: %v\n", statName, statValue)
-		}
-
-		fmt.Println("Types:")
-		pTypes := poke.Types
-		for _, pType := range pTypes {
-			pTypeName := pType.Type.Name
-			fmt.Printf("  - %s\n", pTypeName)
-		}
-	}
-	fmt.Println(".\n.")
-	return nil
-}
-
-func main() {
-	// Initialize configuration
-	conf := &globals.Config{
-		NextURL:     globals.LocationsAllURL,
-		PreviousURL: "",
-		Pokedex:     make(map[string]globals.Pokemon),
-	}
-
-	for {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Pokedex > ")
-
-		scanner.Scan()
-		line := scanner.Text()
-		words := strings.Split(line, " ")
-
-		if command, exists := cliCommandMap[words[0]]; exists {
-			params := []string{}
-			if len(words) > 1 {
-				params = words[1:]
-			}
-			if err := command.Callback(conf, params); err != nil {
-				fmt.Printf("Could not perform command: %v\n", err)
-			}
-		} else {
-			fmt.Println("Unknown command. Type 'help' for a list of commands.")
-		}
-
-	}
 }

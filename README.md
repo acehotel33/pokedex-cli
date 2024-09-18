@@ -1,1 +1,1 @@
-# A CLI tool that implements the Pokedex API
+# A Pokedex CLI tool for Searching and Catching Pokemon 
